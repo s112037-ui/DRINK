@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Boba | 點餐與收銀整合系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #9d4edd;
+            --primary-hover: #7b2cbf;
+            --secondary: #ff9e00;
+            --bg-dark: #10002b;
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --text-main: #ffffff;
+            --text-muted: #c8b6ff;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --success: #00f5d4;
+            --warning: #ffb703;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #10002b 0%, #240046 50%, #3c096c 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Navbar & Tabs */
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #e0aaff, #c8b6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .logo i { color: #e0aaff; -webkit-text-fill-color: initial; }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            background: rgba(0,0,0,0.2);
+            padding: 0.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover { color: white; }
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(157, 78, 221, 0.4);
+        }
+        .tab-btn.backend { background: transparent; }
+        .tab-btn.backend.active { background: var(--secondary); color: #000; box-shadow: 0 4px 15px rgba(255, 158, 0, 0.4); }
+
+        /* Notification Dot */
+        .notification-dot {
+            background: #ff0054;
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+            display: none;
+        }
+        .notification-dot.show { display: inline-block; animation: popIn 0.3s infinite alternate; }
+
+        @keyframes popIn {
+            from { transform: scale(1); }
+            to { transform: scale(1.2); }
+        }
+
+        /* Views */
+        .view { display: none; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+        .view.active { display: block; animation: fadeIn 0.4s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 { font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Frontend View (Customer) */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .menu-item {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .menu-item:hover { transform: translateY(-5px); border-color: var(--primary); background: rgba(157, 78, 221, 0.1); }
+        .item-icon { font-size: 3.5rem; margin-bottom: 1rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+        .item-name { font-weight: 600; margin-bottom: 0.5rem; }
+        .item-price { font-weight: 800; color: var(--secondary); font-size: 1.25rem; }
+
+        /* Cart */
+        .cart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 150px);
+            position: sticky;
+            top: 6rem;
+        }
+        #cart-items { flex-grow: 1; overflow-y: auto; margin-bottom: 1rem; padding-right: 5px; }
+        #cart-items::-webkit-scrollbar { width: 6px; }
+        #cart-items::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+        
+        .empty-cart { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); opacity: 0.5; }
+        .empty-cart i { font-size: 3rem; margin-bottom: 1rem; }
+
+        .cart-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 12px; margin-bottom: 0.5rem;
+        }
+        .qty-btn { background: transparent; border: 1px solid var(--glass-border); color: white; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .qty-btn:hover { background: var(--primary); }
+
+        .checkout-btn {
+            background: linear-gradient(45deg, var(--primary), #5a189a);
+            color: white; border: none; width: 100%; padding: 1rem; border-radius: 12px;
+            font-size: 1.125rem; font-weight: 800; cursor: pointer; transition: 0.3s;
+        }
+        .checkout-btn:hover:not(:disabled) { box-shadow: 0 8px 20px rgba(157, 78, 221, 0.4); transform: translateY(-2px); }
+        .checkout-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+        /* Backend View (Cashier) */
+        .backend-container {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .stat-value { font-size: 2.5rem; font-weight: 800; margin: 0.5rem 0; color: var(--secondary); }
+
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .order-card {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.3s;
+        }
+        .order-card.status-Pending { border-left: 6px solid var(--warning); }
+        .order-card.status-Paid { border-left: 6px solid var(--success); opacity: 0.7; }
+
+        .order-info { flex: 1; }
+        .order-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .order-id { font-size: 1.25rem; font-weight: 700; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.875rem; font-weight: bold; }
+        .badge.Pending { background: rgba(255, 183, 3, 0.2); color: var(--warning); }
+        .badge.Paid { background: rgba(0, 245, 212, 0.2); color: var(--success); }
+        
+        .order-items { color: var(--text-muted); line-height: 1.6; }
+        .order-total { font-size: 1.5rem; font-weight: 800; color: var(--success); }
+
+        .action-area { text-align: right; min-width: 200px; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+        .pay-btn { background: var(--secondary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(255, 158, 0, 0.3); }
+        .pay-btn:hover { background: #ffb703; transform: scale(1.05); }
+
+        .no-orders { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 1.25rem; }
+
+        /* Full page overlay for success */
+        .overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .overlay.active { display: flex; }
+        .success-box {
+            background: var(--bg-dark); border: 1px solid var(--primary);
+            padding: 3rem; border-radius: 20px; text-align: center;
+            max-width: 400px; box-shadow: 0 0 30px rgba(157, 78, 221, 0.5);
+        }
+        .success-icon {
+            font-size: 4rem; color: var(--success); margin-bottom: 1rem;
+            animation: bounce 0.5s ease;
+        }
+        @keyframes bounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="logo">
+            <i class="ri-cup-line"></i> Neon Boba
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" id="btn-frontend" onclick="switchTab('frontend')">
+                <i class="ri-store-2-line"></i> 前端點餐 (客人專用)
+            </button>
+            <button class="tab-btn backend" id="btn-backend" onclick="switchTab('backend')">
+                <i class="ri-macbook-line"></i> 後端收銀 (店員專用)
+                <span class="notification-dot" id="order-notification">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Overlay Success Message (Frontend) -->
+    <div class="overlay" id="success-overlay">
+        <div class="success-box">
+            <div class="success-icon"><i class="ri-check-line"></i></div>
+            <h2 style="justify-content: center;">點餐成功！</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;" id="overlay-msg">訂單已成功傳送至後端收銀系統。<br>請店員切換至「後端收銀」分頁進行收費。</p>
+            <button class="tab-btn" style="background: var(--primary); color: white; margin: 0 auto; width: 100%; justify-content: center;" onclick="closeOverlay()">完成</button>
+        </div>
+    </div>
+
+    <!-- Frontend View -->
+    <div class="view active" id="view-frontend">
+        <div class="grid-layout">
+            <section>
+                <h2><i class="ri-drinks-line"></i> 飲料菜單</h2>
+                <div class="menu-grid" id="menu-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <section>
+                <div class="cart-container">
+                    <h2 style="font-size: 1.25rem;"><i class="ri-shopping-bag-line"></i> 當前訂單</h2>
+                    <div id="cart-items">
+                        <div class="empty-cart">
+                            <i class="ri-shopping-cart-2-line"></i>
+                            <p>購物車是空的</p>
+                        </div>
+                    </div>
+                    <div style="border-top: 1px solid var(--glass-border); padding-top: 1rem; margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 1.25rem; font-weight: 800;">
+                            <span>總計</span>
+                            <span style="color: var(--secondary);" id="total-price">$0</span>
+                        </div>
+                        <button class="checkout-btn" id="checkout-btn" disabled onclick="submitOrder()">
+                            <i class="ri-send-plane-fill"></i> 送出訂單至後端
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Backend View -->
+    <div class="view" id="view-backend">
+        <div class="backend-container">
+            <h2><i class="ri-cash-register-line"></i> 收銀管理中心</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p>今日訂單總數</p>
+                    <div class="stat-value" id="stat-total-orders">0</div>
+                </div>
+                <div class="stat-card">
+                    <p>待收銀 (Pending)</p>
+                    <div class="stat-value" id="stat-pending" style="color: var(--warning);">0</div>
+                </div>
+                <div class="stat-card">
+                    <p>今日營業額 (已收現)</p>
+                    <div class="stat-value" id="stat-revenue" style="color: var(--success);">$0</div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;"><i class="ri-list-check-2"></i> 訂單列表</h3>
+            <div class="orders-list" id="orders-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Database
+        const menuData = [
+            { id: 1, name: '招牌珍珠奶茶', price: 65, icon: '🧋' },
+            { id: 2, name: '極品宇治抹茶', price: 80, icon: '🍵' },
+            { id: 3, name: '百香雙響炮', price: 60, icon: '🍹' },
+            { id: 4, name: '黑糖鮮奶', price: 75, icon: '🥛' },
+            { id: 5, name: '冷萃烏龍茶', price: 40, icon: '🧊' },
+            { id: 6, name: '鮮榨葡萄柚綠', price: 70, icon: '🍊' },
+            { id: 7, name: '仲夏芒果冰沙', price: 90, icon: '🥭' },
+            { id: 8, name: '荔枝氣泡飲', price: 65, icon: '🥤' }
+        ];
+
+        let cart = [];
+        let allOrders = []; // Simulated backend database
+        let pendingCount = 0;
+        let totalRevenue = 0;
+
+        // UI Initialization
+        document.getElementById('menu-grid').innerHTML = menuData.map(item => `
+            <div class="menu-item" onclick="addToCart(${item.id})">
+                <div class="item-icon">${item.icon}</div>
+                <div class="item-name">${item.name}</div>
+                <div class="item-price">$${item.price}</div>
+            </div>
+        `).join('');
+
+        // Tab Switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            
+            document.getElementById('btn-' + tab).classList.add('active');
+            document.getElementById('view-' + tab).classList.add('active');
+
+            if (tab === 'backend') {
+                document.getElementById('order-notification').classList.remove('show');
+                renderBackend();
+            }
+        }
+
+        // Cart Actions
+        function addToCart(id) {
+            const item = menuData.find(i => i.id === id);
+            const existing = cart.find(i => i.id === id);
+            if (existing) existing.quantity++;
+            else cart.push({ ...item, quantity: 1 });
+            updateCartUI();
+        }
+
+        function updateQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (!item) return;
+            item.quantity += delta;
+            if(item.quantity <= 0) cart = cart.filter(i => i.id !== id);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const cartHtml = document.getElementById('cart-items');
+            const totalHtml = document.getElementById('total-price');
+            const btnHtml = document.getElementById('checkout-btn');
+
+            if (cart.length === 0) {
+                cartHtml.innerHTML = '<div class="empty-cart"><i class="ri-shopping-cart-2-line"></i><p>尚未選擇飲品</p></div>';
+                btnHtml.disabled = true;
+                totalHtml.innerText = '$0';
+                return;
+            }
+
+            let total = 0;
+            cartHtml.innerHTML = cart.map(item => {
+                total += item.price * item.quantity;
+                return `
+                <div class="cart-item">
+                    <div>
+                        <div style="font-weight: 600;">${item.name}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted);">$${item.price} x ${item.quantity}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+                        <span>${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            totalHtml.innerText = '$' + total;
+            btnHtml.disabled = false;
+        }
+
+        // Processing Order (Moving from Frontend to Backend)
+        function submitOrder() {
+            if (cart.length === 0) return;
+            
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
+            
+            // Save to "Backend" array
+            allOrders.unshift({
+                id: orderId,
+                items: [...cart],
+                total: total,
+                status: 'Pending',
+                time: new Date().toLocaleTimeString()
+            });
+
+            // Update notifications
+            pendingCount++;
+            const notif = document.getElementById('order-notification');
+            notif.innerText = pendingCount;
+            notif.classList.add('show');
+
+            // Show Success Overlay
+            document.getElementById('overlay-msg').innerHTML = `訂單編號 <strong>${orderId}</strong> 已建立。<br>請店員切換至「後端收銀」分頁進行收錢。`;
+            document.getElementById('success-overlay').classList.add('active');
+
+            // Reset Cart
+            cart = [];
+            updateCartUI();
+        }
+
+        function closeOverlay() {
+            document.getElementById('success-overlay').classList.remove('active');
+        }
+
+        // Backend Cashier Actions
+        function renderBackend() {
+            document.getElementById('stat-total-orders').innerText = allOrders.length;
+            document.getElementById('stat-pending').innerText = pendingCount;
+            document.getElementById('stat-revenue').innerText = '$' + totalRevenue;
+
+            const listHtml = document.getElementById('orders-list');
+            
+            if (allOrders.length === 0) {
+                listHtml.innerHTML = '<div class="no-orders"><i class="ri-inbox-line" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>目前尚無任何訂單紀錄</div>';
+                return;
+            }
+
+            listHtml.innerHTML = allOrders.map(order => `
+                <div class="order-card status-${order.status}">
+                    <div class="order-info">
+                        <div class="order-header">
+                            <span class="order-id">${order.id}</span>
+                            <span class="badge ${order.status}">${order.status == 'Pending' ? '<i class="ri-time-line"></i> 待收銀' : '<i class="ri-check-double-line"></i> 已收銀'}</span>
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">[${order.time}]</span>
+                        </div>
+                        <div class="order-items">
+                            ${order.items.map(i => `<div>• ${i.name} x${i.quantity} <span style="opacity: 0.5;">($${i.price * i.quantity})</span></div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="action-area">
+                        <div class="order-total">$${order.total}</div>
+                        ${order.status === 'Pending' 
+                            ? `<button class="pay-btn" onclick="collectMoney('${order.id}')"><i class="ri-hand-coin-line"></i> 點此收錢</button>`
+                            : `<div style="color: var(--success); font-weight: bold;"><i class="ri-checkbox-circle-fill"></i> 款項已收</div>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function collectMoney(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (order && order.status === 'Pending') {
+                order.status = 'Paid';
+                pendingCount--;
+                totalRevenue += order.total;
+                
+                // Show floating money animation (optional fun detail)
+                renderBackend();
+            }
+        }
+
+    </script>
+</body>
+</html>
