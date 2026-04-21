@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Boba | 點飲料系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="ri-cup-line"></i> Neon Boba
+            </div>
+            <div class="header-status">
+                <span class="badge backend-status" id="backend-status"><i class="ri-pulse-line"></i> 前端獨立運行中</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Menu Section -->
+            <section class="menu-section">
+                <h2>精選飲品 <span>Signature Drinks</span></h2>
+                <div class="menu-grid" id="menu-grid">
+                    <!-- JS will populate menu here -->
+                </div>
+            </section>
+
+            <!-- Cart / Checkout Section -->
+            <section class="cart-section">
+                <h2>您的訂單 <span>Your Cart</span></h2>
+                <div class="cart-container">
+                    <div id="cart-items">
+                        <div class="empty-cart">
+                            <i class="ri-shopping-cart-2-line"></i>
+                            <p>購物車是空的</p>
+                        </div>
+                    </div>
+                    <div class="cart-summary">
+                        <div class="total-row">
+                            <span>總計 Total</span>
+                            <span class="total-price" id="total-price">$0</span>
+                        </div>
+                        <button class="checkout-btn" id="checkout-btn" disabled>
+                            前往付款 Checkout <i class="ri-arrow-right-line"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Payment Modal Overlay -->
+                <div class="modal-overlay" id="payment-modal">
+                    <div class="modal-content">
+                        <div class="spinner" id="payment-spinner"></div>
+                        <div class="success-icon" id="payment-success" style="display: none;">
+                            <i class="ri-check-line"></i>
+                        </div>
+                        <h3 id="payment-status">後端收銀處理中...</h3>
+                        <p id="payment-message">Processing your payment on the server</p>
+                        <button class="close-modal-btn" id="close-modal-btn" style="display: none;">完成 Done</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
